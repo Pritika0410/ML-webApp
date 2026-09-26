@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Next-Hour Electricity Forecast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FFF4F7;
+    --card: #FFFFFF;
+    --text: #3A2630;
+    --muted: #8A6873;
+    --accent: #E8A1B5;
+    --accent-soft: #FCE1E8;
+    --border: #F0CCD7;
+    --danger: #C95C73;
+    --danger-soft: #F9DDE4;
+    --ok: #6FA58A;
+    --ok-soft: #E3F2EA;
+    --sans: Calibri, Arial, sans-serif;
+    --mono: Calibri, Arial, sans-serif;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14181C;
+      --card: #1C2127;
+      --text: #ECEAE5;
+      --muted: #8B939C;
+      --accent: #F0A93A;
+      --accent-soft: #3A2E14;
+      --border: #2A3038;
+      --danger: #E85D4A;
+      --danger-soft: #3A2320;
+      --ok: #4FBE8E;
+      --ok-soft: #1E362C;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #FFF4F7;
+    --card: #FFFFFF;
+    --text: #3A2630;
+    --muted: #8A6873;
+    --accent: #E8A1B5;
+    --accent-soft: #FCE1E8;
+    --border: #F0CCD7;
+    --danger: #C95C73;
+    --danger-soft: #F9DDE4;
+    --ok: #6FA58A;
+    --ok-soft: #E3F2EA;
+
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100%;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 48px 20px 64px;
+  }
+  header {
+    margin-bottom: 32px;
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--accent);
+    letter-spacing: 0.02em;
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-size: clamp(1.6rem, 3.4vw, 2.15rem);
+    line-height: 1.15;
+    margin: 0 0 10px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .lede {
+    color: var(--muted);
+    font-size: 0.98rem;
+    line-height: 1.55;
+    max-width: 62ch;
+    margin: 0;
+  }
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 0;
+  }
+  @media (max-width: 720px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+  .form-side {
+    padding: 30px 32px;
+    border-right: 1px solid var(--border);
+  }
+  @media (max-width: 720px) {
+    .form-side { border-right: none; border-bottom: 1px solid var(--border); }
+  }
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .field label {
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .field input, .field select {
+    font-family: var(--mono);
+    font-size: 0.95rem;
+    padding: 9px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+  }
+  .field input:focus, .field select:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .hint {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin: 4px 0 18px;
+    line-height: 1.5;
+  }
+  .weekend-note {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: -4px;
+    margin-bottom: 18px;
+  }
+  .actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  button {
+    font-family: var(--sans);
+    font-size: 0.92rem;
+    font-weight: 500;
+    padding: 11px 18px;
+    border-radius: 7px;
+    border: 1px solid transparent;
+    cursor: pointer;
+  }
+  #predictBtn {
+    background: var(--accent);
+    color: #1B1200;
+  }
+  #predictBtn:hover { filter: brightness(1.05); }
+  #sampleBtn {
+    background: transparent;
+    color: var(--text);
+    border-color: var(--border);
+  }
+  #sampleBtn:hover { border-color: var(--accent); }
+
+  .result-side {
+    padding: 30px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    justify-content: center;
+  }
+  .result-label {
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .result-value {
+    font-family: var(--mono);
+    font-size: 2.6rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .result-unit {
+    font-size: 1.1rem;
+    color: var(--muted);
+    font-weight: 400;
+  }
+  .result-range {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .gauge-track {
+    height: 10px;
+    border-radius: 999px;
+    background: var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .gauge-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--accent);
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+  .gauge-marker {
+    position: absolute;
+    top: -4px;
+    width: 2px;
+    height: 18px;
+    background: var(--danger);
+  }
+  .gauge-labels {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    padding: 5px 10px;
+    border-radius: 999px;
+    width: fit-content;
+  }
+  .status-normal { background: var(--ok-soft); color: var(--ok); }
+  .status-peak { background: var(--danger-soft); color: var(--danger); }
+  .placeholder-msg {
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  footer {
+    margin-top: 22px;
+    color: var(--muted);
+    font-size: 0.8rem;
+    line-height: 1.6;
+  }
+  footer code {
+    font-family: var(--mono);
+    background: var(--accent-soft);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: var(--text);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Household Electricity Consumption</div>
+    <h1>Next-hour demand forecast</h1>
+    <p class="lede">Enter recent consumption and the target hour. A Random Forest trained on lag and calendar features, running entirely in this page, predicts what the household will draw next.</p>
+  </header>
+
+  <div class="panel">
+    <div class="grid">
+      <div class="form-side">
+        <div class="field-row">
+          <div class="field">
+            <label for="lag1">1 hour ago (kW)</label>
+            <input type="number" id="lag1" step="0.01" placeholder="e.g. 1.8">
+          </div>
+          <div class="field">
+            <label for="lag2">2 hours ago (kW)</label>
+            <input type="number" id="lag2" step="0.01" placeholder="e.g. 2.1">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="lag24">Same hour, yesterday (kW)</label>
+            <input type="number" id="lag24" step="0.01" placeholder="e.g. 1.6">
+          </div>
+          <div class="field">
+            <label for="lag168">Same hour, last week (kW)</label>
+            <input type="number" id="lag168" step="0.01" placeholder="e.g. 1.9">
+          </div>
+        </div>
+        <div class="hint">Consumption is the household's average active power draw (kW) over the hour.</div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="hour">Hour being forecast</label>
+            <select id="hour"></select>
+          </div>
+          <div class="field">
+            <label for="dow">Day of week</label>
+            <select id="dow">
+              <option value="0">Monday</option>
+              <option value="1">Tuesday</option>
+              <option value="2">Wednesday</option>
+              <option value="3">Thursday</option>
+              <option value="4">Friday</option>
+              <option value="5">Saturday</option>
+              <option value="6">Sunday</option>
+            </select>
+          </div>
+        </div>
+        <div class="weekend-note" id="weekendNote">Weekend flag: 0 (weekday)</div>
+
+        <div class="actions">
+          <button id="predictBtn">Forecast next hour</button>
+          <button id="sampleBtn" type="button">Fill example values</button>
+        </div>
+      </div>
+
+      <div class="result-side" id="resultSide">
+        <div class="placeholder-msg">Enter the four consumption values and hit forecast, the prediction and its uncertainty range will appear here.</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Runs a 200-tree Random Forest (scikit-learn, exported to JSON) directly in browser, no server, no data sent anywhere. Peak threshold shown on the gauge is the 90th percentile of this project's training data (<code>3.23 kW</code>). This is a demonstration of the model built for a UTS Machine Learning coursework project; forecasts are illustrative, not a real household energy readout.
+  </footer>
+</div>
+
+<script>
+let MODEL = { trees: [] };
+let modelLoaded = false;
+
+fetch("model.json")
+  .then(response => {
+    if (!response.ok) {
+      throw new Error("Could not load model.json");
+    }
+    return response.json();
+  })
+  .then(data => {
+    MODEL = data;
+    modelLoaded = true;
+    console.log("Random Forest loaded:", MODEL.trees.length, "trees");
+  })
+  .catch(error => {
+    console.error("Model loading error:", error);
+  });
+
+const PEAK_THRESHOLD = 3.2305866666666665;
+const GAUGE_MAX = 6.0;
+
+function predictTree(tree, x) {
+  let node = 0;
+  let guard = 0;
+  while (!tree[node].leaf) {
+    const f = tree[node].feature;
+    if (x[f] <= tree[node].threshold) node = tree[node].left;
+    else node = tree[node].right;
+    guard++;
+    if (guard > 200) break;
+  }
+  return tree[node].value;
+}
+
+function predictForest(x) {
+  const preds = MODEL.trees.map(t => predictTree(t, x));
+  const mean = preds.reduce((a,b) => a+b, 0) / preds.length;
+  const sorted = [...preds].sort((a,b) => a-b);
+  const lo = sorted[Math.floor(sorted.length * 0.1)];
+  const hi = sorted[Math.floor(sorted.length * 0.9)];
+  return { mean, lo, hi };
+}
+
+const hourSelect = document.getElementById('hour');
+for (let h = 0; h < 24; h++) {
+  const opt = document.createElement('option');
+  opt.value = h;
+  opt.textContent = String(h).padStart(2,'0') + ':00';
+  hourSelect.appendChild(opt);
+}
+const now = new Date();
+hourSelect.value = now.getHours();
+
+const dowSelect = document.getElementById('dow');
+const weekendNote = document.getElementById('weekendNote');
+function updateWeekendNote() {
+  const dow = parseInt(dowSelect.value, 10);
+  const isWeekend = dow >= 5 ? 1 : 0;
+  weekendNote.textContent = 'Weekend flag: ' + isWeekend + (isWeekend ? ' (weekend)' : ' (weekday)');
+}
+dowSelect.addEventListener('change', updateWeekendNote);
+updateWeekendNote();
+
+document.getElementById('sampleBtn').addEventListener('click', () => {
+  document.getElementById('lag1').value = 1.85;
+  document.getElementById('lag2').value = 2.05;
+  document.getElementById('lag24').value = 1.62;
+  document.getElementById('lag168').value = 1.94;
+  hourSelect.value = 19;
+  dowSelect.value = 2;
+  updateWeekendNote();
+});
+
+document.getElementById('predictBtn').addEventListener('click', () => {
+    if (!modelLoaded) {
+    alert("The Random Forest model is still loading. Please wait a moment and try again.");
+    return;
+  }
+  const lag1 = parseFloat(document.getElementById('lag1').value);
+  const lag2 = parseFloat(document.getElementById('lag2').value);
+  const lag24 = parseFloat(document.getElementById('lag24').value);
+  const lag168 = parseFloat(document.getElementById('lag168').value);
+  const hour = parseInt(hourSelect.value, 10);
+  const dow = parseInt(dowSelect.value, 10);
+  const isWeekend = dow >= 5 ? 1 : 0;
+
+  const resultSide = document.getElementById('resultSide');
+  if ([lag1, lag2, lag24, lag168].some(v => Number.isNaN(v))) {
+    resultSide.innerHTML = '<div class="placeholder-msg" style="color: var(--danger);">Fill in all four consumption values (or click "Fill example values") before forecasting.</div>';
+    return;
+  }
+
+  // feature order must match training: lag_1, lag_2, lag_24, lag_168, hour, day_of_week, is_weekend
+  const x = [lag1, lag2, lag24, lag168, hour, dow, isWeekend];
+  const { mean, lo, hi } = predictForest(x);
+  const isPeak = mean >= PEAK_THRESHOLD;
+  const pct = Math.max(0, Math.min(100, (mean / GAUGE_MAX) * 100));
+  const markerPct = Math.max(0, Math.min(100, (PEAK_THRESHOLD / GAUGE_MAX) * 100));
+
+  resultSide.innerHTML = `
+    <div>
+      <div class="result-label">Predicted next-hour consumption</div>
+      <div class="result-value">${mean.toFixed(2)}<span class="result-unit"> kW</span></div>
+      <div class="result-range">ensemble range (10th&ndash;90th pct): ${lo.toFixed(2)}&ndash;${hi.toFixed(2)} kW</div>
+    </div>
+    <div>
+      <div class="gauge-track">
+        <div class="gauge-fill" style="width:${pct}%"></div>
+        <div class="gauge-marker" style="left:${markerPct}%"></div>
+      </div>
+      <div class="gauge-labels"><span>0 kW</span><span>peak threshold 3.23 kW</span><span>${GAUGE_MAX.toFixed(0)} kW</span></div>
+    </div>
+    <div class="status-badge ${isPeak ? 'status-peak' : 'status-normal'}">${isPeak ? 'Above peak threshold' : 'Within normal range'}</div>
+  `;
+});
+</script>
+</body>
+</html>
